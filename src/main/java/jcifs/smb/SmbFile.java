@@ -891,6 +891,34 @@ int addressIndex;
         UniAddress addr;
 
         addr = getAddress();
+
+
+	//
+	// FIXME - the following "work", but may not be the right way
+	//
+	// The doConnect() method may be called multiple times if a connection attempt fails and there are multiple
+	// addresses available for the hostname.  In these cases getAddress() will return the next address to try.
+	//
+	// The following block discards the existing tree if it is not currently in a connected state and has a
+	// different address.  Without this workaround retries will occur, but only the first address will ever be
+	// used.
+	//
+	// If the transport is connected just use it.  This is probably not "right", but seems to work in our case.
+	// We are avoiding having to understand how to close/disconnect a session during a connect call.  Note that
+	// is it possible that the situation (connect tree using a different address than returned by getAddress())
+	// cannot occur.
+        //
+        if (tree != null && addr != null && !isConnected()) {
+            if (tree.session != null && tree.session.transport != null) {
+                if (!addr.equals(tree.session.transport.address)) {
+                    // if we have a new address, discard the existing non-connected transport and tree, otherwise the
+		    // new value will never be used
+                    tree = null;
+                }
+            }
+        }
+
+
         if (tree != null) {
             trans = tree.session.transport;
         } else {
