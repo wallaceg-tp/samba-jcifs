@@ -32,6 +32,17 @@ import jcifs.dcerpc.msrpc.*;
 
 public class SmbTransport extends Transport implements SmbConstants {
 
+    /**
+     * Default behaviour when {@link #negotiate(int, ServerMessageBlock)} fails is to retry using another port in the
+     * following situations:
+     * <ul>
+     * <li>if port 0 or 445 (default port) retry using port 139</li>
+     * <li>otherwise retry using port 445</li>
+     * </ul>
+     */
+    private static boolean skipNegotiatePortFallback = Config.getBoolean("jcifs.skipNegotiatePortFallback", false);
+
+
     static final byte[] BUF = new byte[0xFFFF];
     static final SmbComNegotiate NEGOTIATE_REQUEST = new SmbComNegotiate();
     static LogStream log = LogStream.getInstance();
@@ -318,9 +329,17 @@ public class SmbTransport extends Transport implements SmbConstants {
         try {
             negotiate( port, resp );
         } catch( ConnectException ce ) {
+            if (skipNegotiatePortFallback) {
+                throw ce;
+            }
+
             port = (port == 0 || port == DEFAULT_PORT) ? 139 : DEFAULT_PORT;
             negotiate( port, resp );
         } catch( NoRouteToHostException nr ) {
+            if (skipNegotiatePortFallback) {
+                throw nr;
+            }
+
             port = (port == 0 || port == DEFAULT_PORT) ? 139 : DEFAULT_PORT;
             negotiate( port, resp );
         }

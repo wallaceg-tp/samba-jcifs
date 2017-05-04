@@ -23,4 +23,13 @@ This repository was built in the following manner:
 
 ## Local Changes
 
-None
+### Skip Negotiate Port Fallback
+
+Added new configuration option `jcifs.skipNegotiatePortFallback` to allow us to
+disable the default retry behaviour if the initial negotiate call fails.  By default the
+following may happen:
+* if port 0 or 445 (default port) retry using port 139
+* otherwise retry using port 445
+
+Typically this will _always_ fail and simply add another 30 seconds to the process for the
+extra connection attempt to timeout.
